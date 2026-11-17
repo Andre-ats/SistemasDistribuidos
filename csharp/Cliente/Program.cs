@@ -28,3 +28,8 @@ byte[] respostaBytes = socket.ReceiveFrameBytes();
 Envelope resposta = MessagePackSerializer.Deserialize<Envelope>(respostaBytes);
 
 Console.WriteLine($"Resposta do servidor: {resposta.Status}");
+
+if (resposta.Status == "error")
+{
+    Console.WriteLine($"Erro: {resposta.Error}");
+}
