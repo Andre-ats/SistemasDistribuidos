@@ -7,9 +7,19 @@ using NetMQ.Sockets;
 using System.Collections.Concurrent;
 using System.Threading;
 
+int portaServidor = int.Parse(
+    Environment.GetEnvironmentVariable("SERVER_PORT") ?? "6000"
+);
+
+int portaPub = int.Parse(
+    Environment.GetEnvironmentVariable("PUB_PORT") ?? "6001"
+);
+
 using var socket = new RequestSocket();
 
-socket.Connect("tcp://localhost:6000");
+socket.Connect($"tcp://localhost:{portaServidor}");
+
+Console.WriteLine($"Conectado ao servidor na porta {portaServidor}");
 
 string? usuarioLogado = null;
 long relogioLogico = 0;
@@ -21,7 +31,7 @@ Thread threadMensagens = new(() =>
 {
     using var subscriber = new SubscriberSocket();
 
-    subscriber.Connect("tcp://localhost:6001");
+    subscriber.Connect($"tcp://localhost:{portaPub}");
     subscriber.Subscribe("");
 
     while (true)

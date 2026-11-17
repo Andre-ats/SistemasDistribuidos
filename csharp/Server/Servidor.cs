@@ -14,18 +14,50 @@ public class Servidor
     private readonly Dictionary<string, HashSet<string>> participantes = new();
     private readonly Dictionary<string, List<Envelope>> mensagens = new();
     private long relogioLogico = 0;
+
+    private readonly Persistencia persistencia;
+    private readonly List<LoginRegistro> historicoLogins = new();
+
+    private readonly int porta;
+    private readonly int portaPub;
+
+    public Servidor(int porta, int portaPub, string servidorId)
+    {
+        this.porta = porta;
+        this.portaPub = portaPub;
+
+        persistencia = new Persistencia(servidorId);
+    }
     
     public void Iniciar()
     {
+        historicoLogins.AddRange(persistencia.CarregarLogins());
+
+        foreach (string canal in persistencia.CarregarCanais())
+        {
+            canais.Add(canal);
+
+            participantes.Add(
+                canal,
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            );
+
+            mensagens.Add(canal, new List<Envelope>());
+        }
+
+        Console.WriteLine($"Logins registrados: {historicoLogins.Count}");
+        Console.WriteLine($"Canais carregados: {canais.Count}");
+
         using var socket = new ResponseSocket();
 
-        socket.Bind("tcp://*:6000");
+        socket.Bind($"tcp://*:{porta}");
 
         using var publisher = new PublisherSocket();
 
-        publisher.Bind("tcp://*:6001");
+        publisher.Bind($"tcp://*:{portaPub}");
 
-        Console.WriteLine("Servidor iniciado na porta 6000!");
+        Console.WriteLine($"Servidor iniciado na porta {porta}!");
+        Console.WriteLine($"Publicações na porta {portaPub}!");
 
         while (true)
         {
@@ -118,6 +150,14 @@ public class Servidor
 
         usuarios.Add(usuario);
 
+        historicoLogins.Add(new LoginRegistro
+        {
+            User = usuario,
+            Ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+        });
+
+        persistencia.SalvarLogins(historicoLogins);
+
         Console.WriteLine($"Usuário conectado: {usuario}");
 
         return new Envelope
@@ -165,6 +205,8 @@ public class Servidor
         canais.Add(canal);
         participantes.Add(canal, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
         mensagens.Add(canal, new List<Envelope>());
+
+        persistencia.SalvarCanais(canais);
 
         Console.WriteLine($"Canal criado: {canal}");
 
