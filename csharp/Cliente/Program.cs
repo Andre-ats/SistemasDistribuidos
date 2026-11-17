@@ -12,6 +12,7 @@ using var socket = new RequestSocket();
 socket.Connect("tcp://localhost:6000");
 
 string? usuarioLogado = null;
+long relogioLogico = 0;
 
 
 ConcurrentDictionary<string, byte> canaisInscritos = new();
@@ -35,6 +36,16 @@ Thread threadMensagens = new(() =>
 
         Envelope mensagemRecebida =
             MessagePackSerializer.Deserialize<Envelope>(dadosMensagem);
+
+        long atual;
+        long novo;
+
+        do
+        {
+            atual = Volatile.Read(ref relogioLogico);
+            novo = Math.Max(atual, mensagemRecebida.Clock) + 1;
+        }
+        while (Interlocked.CompareExchange(ref relogioLogico, novo, atual) != atual);
 
         Console.WriteLine();
         Console.WriteLine($"[{canal}] {mensagemRecebida.User}: {mensagemRecebida.Text}");
@@ -80,7 +91,7 @@ while (true)
                 User = usuarioLogado,
                 From = "Cliente",
                 Ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                Clock = 1
+                Clock = Interlocked.Increment(ref relogioLogico)
             };
 
             socket.SendFrame(MessagePackSerializer.Serialize(logout));
@@ -105,7 +116,7 @@ while (true)
     Envelope mensagem = new Envelope
     {
         Ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-        Clock = 1,
+        Clock = 0,
         From = "Cliente",
         User = usuarioLogado
     };
@@ -176,6 +187,7 @@ while (true)
         continue;
     }
 
+    mensagem.Clock = Interlocked.Increment(ref relogioLogico);
     byte[] dados = MessagePackSerializer.Serialize(mensagem);
 
     socket.SendFrame(dados);
@@ -183,6 +195,17 @@ while (true)
     byte[] respostaBytes = socket.ReceiveFrameBytes();
 
     Envelope resposta = MessagePackSerializer.Deserialize<Envelope>(respostaBytes);
+    long atual;
+    long novo;
+
+    do
+    {
+        atual = Volatile.Read(ref relogioLogico);
+        novo = Math.Max(atual, resposta.Clock) + 1;
+    }
+    while (Interlocked.CompareExchange(ref relogioLogico, novo, atual) != atual);
+
+    Console.WriteLine($"Relógio lógico do Cliente: {novo}");
 
     Console.WriteLine($"Resposta do servidor: {resposta.Status}");
 
@@ -235,6 +258,7 @@ while (true)
 
         foreach (Envelope msg in resposta.Messages)
         {
+            Console.WriteLine($"ID: {msg.Id}");
             Console.WriteLine($"[{msg.User}] {msg.Text}");
         }
     }

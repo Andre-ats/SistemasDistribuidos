@@ -81,7 +81,8 @@ public class Servidor
             }
 
             resposta.Ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            resposta.Clock = mensagem.Clock + 1;
+            relogioLogico++;
+            resposta.Clock = relogioLogico;
             resposta.From = "Server";
 
             byte[] respostaBytes = MessagePackSerializer.Serialize(resposta);
@@ -329,15 +330,17 @@ public class Servidor
             };
         }
 
+        relogioLogico++;
         Envelope novaMensagem = new Envelope
         {
+            Id = Guid.NewGuid().ToString(),
             Type = "post",
             User = usuario,
             Channel = canal,
             Text = texto,
             From = usuario,
             Ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-            Clock = mensagem.Clock
+            Clock = relogioLogico
         };
 
         mensagens[canal].Add(novaMensagem);

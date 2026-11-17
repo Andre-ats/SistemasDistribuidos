@@ -37,4 +37,6 @@ public class Envelope
 
     [Key("messages")]
     public List<Envelope>? Messages { get; set; }
+    [Key("id")]
+    public string? Id { get; set; }
 }
