@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "dgSpecHash": "aQcKMmyprGfiJZS6Kn+DbcOhbjR4dYpitFRC8kyHAM5Qtw/uxJxMnaSnNYx27kMRjJY+9Rv6OB6ITIfYPM6Iiw==",
+  "success": true,
+  "projectFilePath": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Cliente/Cliente.csproj",
+  "expectedPackageFiles": [
+    "/home/andre/.nuget/packages/asyncio/0.1.69/asyncio.0.1.69.nupkg.sha512",
+    "/home/andre/.nuget/packages/messagepack/3.1.12/messagepack.3.1.12.nupkg.sha512",
+    "/home/andre/.nuget/packages/messagepack.annotations/3.1.12/messagepack.annotations.3.1.12.nupkg.sha512",
+    "/home/andre/.nuget/packages/messagepackanalyzer/3.1.12/messagepackanalyzer.3.1.12.nupkg.sha512",
+    "/home/andre/.nuget/packages/microsoft.bcl.cryptography/10.0.13/microsoft.bcl.cryptography.10.0.13.nupkg.sha512",
+    "/home/andre/.nuget/packages/microsoft.net.stringtools/17.11.4/microsoft.net.stringtools.17.11.4.nupkg.sha512",
+    "/home/andre/.nuget/packages/nacl.net/0.1.13/nacl.net.0.1.13.nupkg.sha512",
+    "/home/andre/.nuget/packages/netmq/4.0.4.5/netmq.4.0.4.5.nupkg.sha512",
+    "/home/andre/.nuget/packages/system.collections.immutable/10.0.7/system.collections.immutable.10.0.7.nupkg.sha512",
+    "/home/andre/.nuget/packages/system.formats.asn1/10.0.13/system.formats.asn1.10.0.13.nupkg.sha512",
+    "/home/andre/.nuget/packages/system.security.cryptography.pkcs/10.0.13/system.security.cryptography.pkcs.10.0.13.nupkg.sha512",
+    "/home/andre/.nuget/packages/system.security.cryptography.xml/10.0.13/system.security.cryptography.xml.10.0.13.nupkg.sha512",
+    "/home/andre/.nuget/packages/system.security.principal.windows/5.0.0/system.security.principal.windows.5.0.0.nupkg.sha512",
+    "/home/andre/.nuget/packages/system.servicemodel.primitives/10.0.652802/system.servicemodel.primitives.10.0.652802.nupkg.sha512"
+  ],
+  "logs": []
+}
