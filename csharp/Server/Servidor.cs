@@ -1,3 +1,5 @@
+using Common;
+using MessagePack;
 using NetMQ;
 using NetMQ.Sockets;
 
@@ -15,12 +17,24 @@ public class Servidor
 
         while (true)
         {
-            string mensagem = socket.ReceiveFrameString();
+            byte[] dados = socket.ReceiveFrameBytes();
 
-            Console.WriteLine($"Mensagem recebida: {mensagem}");
+            Envelope mensagem = MessagePackSerializer.Deserialize<Envelope>(dados);
 
-            socket.SendFrame("Mensagem recebida com sucesso!");
+            Console.WriteLine($"Mensagem recebida: {mensagem.Type}");
+
+            Envelope resposta = new Envelope
+            {
+                Type = "REP",
+                Ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                Clock = mensagem.Clock + 1,
+                From = "Server",
+                Status = "OK"
+            };
+
+            byte[] respostaBytes = MessagePackSerializer.Serialize(resposta);
+
+            socket.SendFrame(respostaBytes);
         }
     }
 }
-

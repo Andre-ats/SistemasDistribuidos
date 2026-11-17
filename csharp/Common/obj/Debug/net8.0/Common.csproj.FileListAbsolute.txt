@@ -1,0 +1,13 @@
+/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Common/bin/Debug/net8.0/Common.deps.json
+/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Common/bin/Debug/net8.0/Common.dll
+/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Common/bin/Debug/net8.0/Common.pdb
+/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Common/obj/Debug/net8.0/Common.csproj.AssemblyReference.cache
+/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Common/obj/Debug/net8.0/Common.GeneratedMSBuildEditorConfig.editorconfig
+/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Common/obj/Debug/net8.0/Common.AssemblyInfoInputs.cache
+/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Common/obj/Debug/net8.0/Common.AssemblyInfo.cs
+/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Common/obj/Debug/net8.0/Common.csproj.CoreCompileInputs.cache
+/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Common/obj/Debug/net8.0/Common.sourcelink.json
+/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Common/obj/Debug/net8.0/Common.dll
+/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Common/obj/Debug/net8.0/refint/Common.dll
+/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Common/obj/Debug/net8.0/Common.pdb
+/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Common/obj/Debug/net8.0/ref/Common.dll

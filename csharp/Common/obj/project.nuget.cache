@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "dgSpecHash": "eFlMN1LZEy8MdwrOeNuKaKGoO733vZMlnBZuZIIf641Ha69exRoM4L2RgCoNzaZUeql5h+adwZ7EtnsUrxQfFw==",
+  "success": true,
+  "projectFilePath": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Common/Common.csproj",
+  "expectedPackageFiles": [
+    "/home/andre/.nuget/packages/messagepack/3.1.12/messagepack.3.1.12.nupkg.sha512",
+    "/home/andre/.nuget/packages/messagepack.annotations/3.1.12/messagepack.annotations.3.1.12.nupkg.sha512",
+    "/home/andre/.nuget/packages/messagepackanalyzer/3.1.12/messagepackanalyzer.3.1.12.nupkg.sha512",
+    "/home/andre/.nuget/packages/microsoft.net.stringtools/17.11.4/microsoft.net.stringtools.17.11.4.nupkg.sha512"
+  ],
+  "logs": []
+}
