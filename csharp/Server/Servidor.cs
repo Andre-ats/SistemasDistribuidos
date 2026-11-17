@@ -13,12 +13,17 @@ public class Servidor
     private readonly HashSet<string> canais = new();
     private readonly Dictionary<string, HashSet<string>> participantes = new();
     private readonly Dictionary<string, List<Envelope>> mensagens = new();
+    private long relogioLogico = 0;
     
     public void Iniciar()
     {
         using var socket = new ResponseSocket();
 
         socket.Bind("tcp://*:6000");
+
+        using var publisher = new PublisherSocket();
+
+        publisher.Bind("tcp://*:6001");
 
         Console.WriteLine("Servidor iniciado na porta 6000!");
 
@@ -27,6 +32,10 @@ public class Servidor
             byte[] dados = socket.ReceiveFrameBytes();
 
             Envelope mensagem = MessagePackSerializer.Deserialize<Envelope>(dados);
+
+            relogioLogico = Math.Max(relogioLogico, mensagem.Clock) + 1;
+
+            Console.WriteLine($"Relógio do servidor: {relogioLogico}");
 
             Console.WriteLine($"Mensagem recebida: {mensagem.Type}");
 
@@ -53,10 +62,13 @@ public class Servidor
                     resposta = SairCanal(mensagem);
                     break;
                 case "post":
-                    resposta = PublicarMensagem(mensagem);
+                    resposta = PublicarMensagem(mensagem, publisher);
                     break;
                 case "get_messages":
                     resposta = ConsultarMensagens(mensagem);
+                    break;
+                case "logout":
+                    resposta = Logout(mensagem);
                     break;
                 default:
                     resposta = new Envelope
@@ -271,7 +283,7 @@ public class Servidor
     }
 
 
-    private Envelope PublicarMensagem(Envelope mensagem)
+    private Envelope PublicarMensagem(Envelope mensagem, PublisherSocket publisher)
     {
         string usuario = mensagem.User ?? "";
         string canal = mensagem.Channel ?? "";
@@ -330,6 +342,12 @@ public class Servidor
 
         mensagens[canal].Add(novaMensagem);
 
+        byte[] dadosMensagem = MessagePackSerializer.Serialize(novaMensagem);
+
+        publisher
+            .SendMoreFrame(canal)
+            .SendFrame(dadosMensagem);
+
         Console.WriteLine($"[{canal}] {usuario}: {texto}");
 
         return new Envelope
@@ -387,6 +405,37 @@ public class Servidor
         };
     }
 
+
+    private Envelope Logout(Envelope mensagem)
+    {
+        string usuario = mensagem.User ?? "";
+
+        if (!usuarios.Contains(usuario))
+        {
+            return new Envelope
+            {
+                Type = "logout_reply",
+                Status = "error",
+                Error = "Usuário não está registrado"
+            };
+        }
+
+        usuarios.Remove(usuario);
+
+        foreach (HashSet<string> usuariosCanal in participantes.Values)
+        {
+            usuariosCanal.Remove(usuario);
+        }
+
+        Console.WriteLine($"Usuário desconectado: {usuario}");
+
+        return new Envelope
+        {
+            Type = "logout_reply",
+            Status = "ok",
+            User = usuario
+        };
+    }
 
 
 }
