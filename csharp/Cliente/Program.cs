@@ -7,6 +7,8 @@ using NetMQ.Sockets;
 using System.Collections.Concurrent;
 using System.Threading;
 
+string servidorHost = Environment.GetEnvironmentVariable("SERVER_HOST") ?? "localhost";
+
 int portaServidor = int.Parse(
     Environment.GetEnvironmentVariable("SERVER_PORT") ?? "6000"
 );
@@ -17,7 +19,7 @@ int portaPub = int.Parse(
 
 using var socket = new RequestSocket();
 
-socket.Connect($"tcp://localhost:{portaServidor}");
+socket.Connect($"tcp://{servidorHost}:{portaServidor}");
 
 Console.WriteLine($"Conectado ao servidor na porta {portaServidor}");
 
@@ -31,7 +33,7 @@ Thread threadMensagens = new(() =>
 {
     using var subscriber = new SubscriberSocket();
 
-    subscriber.Connect($"tcp://localhost:{portaPub}");
+    subscriber.Connect($"tcp://{servidorHost}:{portaPub}");
     subscriber.Subscribe("");
 
     while (true)
@@ -66,6 +68,151 @@ Thread threadMensagens = new(() =>
 threadMensagens.IsBackground = true;
 threadMensagens.Start();
 
+string modoCliente =
+    Environment.GetEnvironmentVariable("CLIENT_MODE") ?? "interactive";
+
+if (modoCliente.Equals("auto", StringComparison.OrdinalIgnoreCase))
+{
+    string usuario =
+        Environment.GetEnvironmentVariable("CLIENT_USER") ?? "cliente1";
+
+    string canal =
+        Environment.GetEnvironmentVariable("CLIENT_CHANNEL") ?? "canal_cliente1";
+
+    Console.WriteLine($"Modo automático iniciado: {usuario}");
+
+    Envelope? EnviarAutomatico(string tipo, string? nomeCanal = null)
+    {
+        for (int tentativa = 1; tentativa <= 5; tentativa++)
+        {
+            try
+            {
+                using var requisicaoSocket = new RequestSocket();
+                requisicaoSocket.Options.Linger = TimeSpan.Zero;
+                requisicaoSocket.Connect($"tcp://{servidorHost}:{portaServidor}");
+
+                var requisicao = new Envelope
+                {
+                    Type = tipo,
+                    Ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                    Clock = Interlocked.Increment(ref relogioLogico),
+                    From = "Cliente",
+                    User = usuario,
+                    Channel = nomeCanal
+                };
+
+                requisicaoSocket.SendFrame(
+                    MessagePackSerializer.Serialize(requisicao)
+                );
+
+                if (!requisicaoSocket.TryReceiveFrameBytes(
+                    TimeSpan.FromSeconds(3),
+                    out byte[]? respostaBytes))
+                {
+                    Console.WriteLine(
+                        $"[{usuario}] Sem resposta. Tentativa {tentativa}/5"
+                    );
+
+                    Thread.Sleep(2000);
+                    continue;
+                }
+
+                Envelope resposta =
+                    MessagePackSerializer.Deserialize<Envelope>(respostaBytes);
+
+                long atual;
+                long novo;
+
+                do
+                {
+                    atual = Volatile.Read(ref relogioLogico);
+                    novo = Math.Max(atual, resposta.Clock) + 1;
+                }
+                while (Interlocked.CompareExchange(
+                    ref relogioLogico, novo, atual) != atual);
+
+                return resposta;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[{usuario}] Erro: {ex.Message}");
+                Thread.Sleep(2000);
+            }
+        }
+
+        return null;
+    }
+
+    Envelope? login = EnviarAutomatico("login");
+
+    if (login?.Status != "ok")
+    {
+        Console.WriteLine(
+            $"[{usuario}] Login falhou: {login?.Error ?? "Servidor indisponível"}"
+        );
+
+        Environment.ExitCode = 1;
+        return;
+    }
+
+    Console.WriteLine($"[{usuario}] Login realizado!");
+
+    Envelope? listagem = EnviarAutomatico("list_channels");
+
+    if (listagem?.Status != "ok")
+    {
+        Console.WriteLine($"[{usuario}] Falha ao listar canais.");
+        Environment.ExitCode = 1;
+        return;
+    }
+
+    Console.WriteLine($"[{usuario}] Canais disponíveis:");
+
+    foreach (string nome in listagem.Channels ?? new List<string>())
+    {
+        Console.WriteLine($" - {nome}");
+    }
+
+    if (listagem.Channels?.Contains(canal) == true)
+    {
+        Console.WriteLine($"[{usuario}] Canal '{canal}' já existe.");
+    }
+    else
+    {
+        Envelope? criacao = EnviarAutomatico("create_channel", canal);
+
+        if (criacao?.Status == "ok")
+        {
+            Console.WriteLine($"[{usuario}] Canal '{canal}' criado!");
+        }
+        else
+        {
+            Console.WriteLine(
+                $"[{usuario}] Falha ao criar canal: {criacao?.Error}"
+            );
+
+            Environment.ExitCode = 1;
+            return;
+        }
+    }
+
+    Envelope? logout = EnviarAutomatico("logout");
+
+    if (logout?.Status == "ok")
+    {
+        Console.WriteLine($"[{usuario}] Logout realizado!");
+    }
+    else
+    {
+        Console.WriteLine($"[{usuario}] Falha no logout.");
+        Environment.ExitCode = 1;
+        return;
+    }
+
+    Console.WriteLine($"[{usuario}] Operações automáticas concluídas.");
+    return;
+}
+
 
 while (true)
 {
@@ -88,7 +235,13 @@ while (true)
     Console.WriteLine("0 - Encerrar");
 
     Console.Write("Escolha uma opção: ");
-    string opcao = Console.ReadLine() ?? "";
+    string? opcao = Console.ReadLine();
+
+    if (opcao == null)
+    {
+        Console.WriteLine("Entrada encerrada. Finalizando cliente.");
+        break;
+    }
 
     
     if (opcao == "0")
