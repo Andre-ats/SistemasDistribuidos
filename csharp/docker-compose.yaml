@@ -1,0 +1,37 @@
+
+services:
+  server1:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    environment:
+      SERVER_ID: server1
+      SERVER_PORT: "6000"
+      PUB_PORT: "6001"
+      DATA_DIR: /data
+    ports:
+      - "6000:6000"
+      - "6001:6001"
+    volumes:
+      - server1_data:/data
+    restart: unless-stopped
+
+  server2:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    environment:
+      SERVER_ID: server2
+      SERVER_PORT: "7000"
+      PUB_PORT: "7001"
+      DATA_DIR: /data
+    ports:
+      - "7000:7000"
+      - "7001:7001"
+    volumes:
+      - server2_data:/data
+    restart: unless-stopped
+
+volumes:
+  server1_data:
+  server2_data:

@@ -10,11 +10,10 @@ public class Persistencia
 
     public Persistencia(string servidorId)
 {
-    pastaDados = Path.Combine(
-        AppContext.BaseDirectory,
-        "dados",
-        servidorId
-    );
+    string diretorioBase = Environment.GetEnvironmentVariable("DATA_DIR")
+    ?? Path.Combine(AppContext.BaseDirectory, "dados");
+
+    pastaDados = Path.Combine(diretorioBase, servidorId);
 
     Directory.CreateDirectory(pastaDados);
 }
