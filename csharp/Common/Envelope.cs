@@ -31,4 +31,7 @@ public class Envelope
 
     [Key("error")]
     public string? Error { get; set; }
+    
+    [Key("channels")]
+    public List<string>? Channels { get; set; }
 }
