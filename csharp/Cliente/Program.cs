@@ -11,6 +11,8 @@ Console.WriteLine("2 - Criar canal");
 Console.WriteLine("3 - Listar canais");
 Console.WriteLine("4 - Entrar em um canal");
 Console.WriteLine("5 - Sair de um canal");
+Console.WriteLine("6 - Enviar mensagem");
+Console.WriteLine("7 - Consultar mensagens");
 
 Console.Write("Escolha uma opção: ");
 string opcao = Console.ReadLine() ?? "";
@@ -63,10 +65,30 @@ switch (opcao)
 
             mensagem.Type = "leave_channel";
             break;
+        case "6":
+            Console.Write("Nome do usuário: ");
+            mensagem.User = Console.ReadLine();
 
-    default:
-        Console.WriteLine("Opção inválida");
-        return;
+            Console.Write("Nome do canal: ");
+            mensagem.Channel = Console.ReadLine();
+
+            Console.Write("Mensagem: ");
+            mensagem.Text = Console.ReadLine();
+
+            mensagem.Type = "post";
+            break;
+        case "7":
+            Console.Write("Nome do usuário: ");
+            mensagem.User = Console.ReadLine();
+
+            Console.Write("Nome do canal: ");
+            mensagem.Channel = Console.ReadLine();
+
+            mensagem.Type = "get_messages";
+            break;
+        default:
+            Console.WriteLine("Opção inválida");
+            return;
 }
 
 
@@ -94,5 +116,21 @@ if (resposta.Channels != null)
     foreach (string canal in resposta.Channels)
     {
         Console.WriteLine($"- {canal}");
+    }
+}
+
+
+if (resposta.Messages != null)
+{
+    Console.WriteLine("Mensagens do canal:");
+
+    if (resposta.Messages.Count == 0)
+    {
+        Console.WriteLine("Nenhuma mensagem encontrada.");
+    }
+
+    foreach (Envelope msg in resposta.Messages)
+    {
+        Console.WriteLine($"[{msg.User}] {msg.Text}");
     }
 }
