@@ -64,6 +64,7 @@ public class Servidor
             byte[] dados = socket.ReceiveFrameBytes();
 
             Envelope mensagem = MessagePackSerializer.Deserialize<Envelope>(dados);
+            LogMensagem.Exibir("SERVIDOR", "RECEBENDO REQ", mensagem);
 
             relogioLogico = Math.Max(relogioLogico, mensagem.Clock) + 1;
 
@@ -117,6 +118,7 @@ public class Servidor
             resposta.Clock = relogioLogico;
             resposta.From = "Server";
 
+            LogMensagem.Exibir("SERVIDOR", "ENVIANDO REP", resposta);
             byte[] respostaBytes = MessagePackSerializer.Serialize(resposta);
 
             socket.SendFrame(respostaBytes);

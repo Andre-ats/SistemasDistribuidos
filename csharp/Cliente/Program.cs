@@ -101,6 +101,8 @@ if (modoCliente.Equals("auto", StringComparison.OrdinalIgnoreCase))
                     Channel = nomeCanal
                 };
 
+                LogMensagem.Exibir("CLIENTE", "ENVIANDO REQ", requisicao);
+
                 requisicaoSocket.SendFrame(
                     MessagePackSerializer.Serialize(requisicao)
                 );
@@ -119,6 +121,8 @@ if (modoCliente.Equals("auto", StringComparison.OrdinalIgnoreCase))
 
                 Envelope resposta =
                     MessagePackSerializer.Deserialize<Envelope>(respostaBytes);
+
+                LogMensagem.Exibir("CLIENTE", "RECEBENDO REP", resposta);
 
                 long atual;
                 long novo;
@@ -257,10 +261,13 @@ while (true)
                 Clock = Interlocked.Increment(ref relogioLogico)
             };
 
+            LogMensagem.Exibir("CLIENTE", "ENVIANDO REQ", logout);
             socket.SendFrame(MessagePackSerializer.Serialize(logout));
 
             byte[] respostaLogout = socket.ReceiveFrameBytes();
             Envelope resultado = MessagePackSerializer.Deserialize<Envelope>(respostaLogout);
+
+            LogMensagem.Exibir("CLIENTE", "RECEBENDO REP", resultado);
 
             if (resultado.Status == "ok")
             {
@@ -353,11 +360,13 @@ while (true)
     mensagem.Clock = Interlocked.Increment(ref relogioLogico);
     byte[] dados = MessagePackSerializer.Serialize(mensagem);
 
+    LogMensagem.Exibir("CLIENTE", "ENVIANDO REQ", mensagem);
     socket.SendFrame(dados);
 
     byte[] respostaBytes = socket.ReceiveFrameBytes();
 
     Envelope resposta = MessagePackSerializer.Deserialize<Envelope>(respostaBytes);
+    LogMensagem.Exibir("CLIENTE", "RECEBENDO REP", resposta);
     long atual;
     long novo;
 
