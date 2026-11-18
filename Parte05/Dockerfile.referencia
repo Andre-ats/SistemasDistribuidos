@@ -1,0 +1,22 @@
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+
+WORKDIR /src
+
+COPY Common/Common.csproj Common/
+COPY Referencia/Referencia.csproj Referencia/
+
+RUN dotnet restore Referencia/Referencia.csproj
+
+COPY Common/ Common/
+COPY Referencia/ Referencia/
+
+RUN dotnet publish Referencia/Referencia.csproj -c Release -o /app/publish --no-restore
+
+FROM mcr.microsoft.com/dotnet/runtime:8.0
+
+WORKDIR /app
+
+COPY --from=build /app/publish .
+
+ENTRYPOINT ["dotnet", "Referencia.dll"]
