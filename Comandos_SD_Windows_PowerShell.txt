@@ -1,0 +1,438 @@
+COMANDOS DO PROJETO DE SISTEMAS DISTRIBUÍDOS — WINDOWS POWERSHELL
+Adaptação dos comandos Linux do arquivo original.
+Execute na pasta do projeto, onde está o docker-compose.yml.
+
+IMPORTANTE
+- Os comandos abaixo são para PowerShell (não Git Bash/WSL).
+- Não execute "docker compose down -v" se quiser preservar os dados persistidos. O "-v" apaga os volumes.
+- Para reiniciar os testes do zero apagando os dados, use esse comando somente se isso for intencional.
+- As partes 1 a 4 foram adaptadas. O arquivo original não contém comandos na Parte 5.
+
+----------------------------------------------------------------------
+FUNÇÕES AUXILIARES (cole uma vez no PowerShell antes dos testes)
+----------------------------------------------------------------------
+
+function Show-FirstLogBlock {
+    param(
+        [string]$Service,
+        [string]$Marker,
+        [int]$Lines = 22
+    )
+    $log = @(docker compose logs --no-log-prefix $Service)
+    $index = -1
+    for ($i = 0; $i -lt $log.Count; $i++) {
+        if ($log[$i] -like "*$Marker*") {
+            $index = $i
+            break
+        }
+    }
+    if ($index -ge 0) {
+        $last = [Math]::Min($index + $Lines - 1, $log.Count - 1)
+        $log[$index..$last]
+    } else {
+        Write-Host "Marcador não encontrado: $Marker"
+    }
+}
+
+function Show-LastLogBlock {
+    param(
+        [string]$Service,
+        [string]$Marker,
+        [int]$Lines = 22
+    )
+    $log = @(docker compose logs --no-log-prefix $Service)
+    $index = -1
+    for ($i = 0; $i -lt $log.Count; $i++) {
+        if ($log[$i] -like "*$Marker*") {
+            $index = $i
+        }
+    }
+    if ($index -ge 0) {
+        $last = [Math]::Min($index + $Lines - 1, $log.Count - 1)
+        $log[$index..$last]
+    } else {
+        Write-Host "Marcador não encontrado: $Marker"
+    }
+}
+
+----------------------------------------------------------------------
+PARTE 1 — LOGIN, CANAIS E PERSISTÊNCIA
+----------------------------------------------------------------------
+
+Inicialização:
+# ATENÇÃO: down -v apaga os volumes e os dados persistidos.
+# Use apenas se quiser começar do zero:
+# docker compose down -v
+
+docker compose up --build -d
+docker compose ps
+
+Login bot — requisição:
+docker compose logs client1 | Select-String -Pattern 'Type: login$' -Context 2,20
+
+Login bot — resposta:
+docker compose logs client1 | Select-String -Pattern 'Type: login_reply' -Context 2,20
+
+Listagem de canais:
+docker compose logs client1 | Select-String -Pattern 'Type: list_channels_reply' -Context 2,20
+
+Canais criados:
+docker compose logs | Select-String -Pattern "Canal '.*' criado"
+
+Bot entrando em um canal — REQ:
+docker compose logs --no-log-prefix client1 | Select-String -Pattern 'Type: join_channel$' -Context 2,20
+
+Bot entrando em um canal — REP:
+docker compose logs --no-log-prefix client1 | Select-String -Pattern 'Type: join_channel_reply' -Context 2,20
+
+Observação: os dois comandos acima mostram o primeiro bloco de envio/resposta do client1. Confira no bloco se aparece Type: join_channel ou Type: join_channel_reply. Para localizar especificamente o tipo, use:
+docker compose logs --no-log-prefix client1 | Select-String -Pattern 'Type: join_channel$' -Context 2,20
+docker compose logs --no-log-prefix client1 | Select-String -Pattern 'Type: join_channel_reply' -Context 2,20
+
+Mostrar eventos de usuários e canais nos servidores:
+docker compose logs server1 server2 server3 server4 server5 server6 server7 server8 | Select-String -Pattern 'Usuário conectado|Canal criado'
+
+Persistência em disco:
+docker compose exec server1 ls -l /data/server1
+
+Registros de usuários nos logs:
+docker compose logs server1 | Select-String -Pattern 'User=(cliente|professor)' | Select-Object -First 6
+
+Dados após reinício:
+docker compose restart server1
+Start-Sleep -Seconds 5
+docker compose logs --since=2m server1 | Select-String -Pattern 'Logins registrados|Canais carregados'
+
+Executar cliente manualmente:
+docker compose run --rm -it -e CLIENT_MODE=interactive -e SERVER_HOST=server1 -e SERVER_PORT=6000 client1
+
+----------------------------------------------------------------------
+PARTE 2 — MENSAGENS PUB/SUB E IDENTIFICAÇÃO DA MENSAGEM
+----------------------------------------------------------------------
+
+Uma mensagem que o client8 recebeu de outro usuário:
+$log8 = @(docker compose logs --no-log-prefix client8)
+$blocos = ($log8 -join "`n") -split "(?:\r?\n){2,}"
+
+$mensagem = $blocos | Where-Object {
+    $_ -match 'RECEBENDO PUB' -and
+    $_ -notmatch '(?m)^\s*From:\s*cliente8\s*$'
+} | Select-Object -First 1
+
+$mensagem
+
+Guardar o ID dessa mensagem:
+if ($mensagem -match '(?m)^\s*Id:\s*(\S+)') {
+    $ID = $Matches[1]
+    Write-Host $ID
+}
+
+Mostrar quem publicou e quem recebeu:
+docker compose logs | Select-String -SimpleMatch "Id: $ID"
+
+Descobrir qual servidor publicou:
+$SRV = $null
+
+foreach ($n in 1..8) {
+    $s = "server$n"
+    $logs = @(docker compose logs --no-log-prefix $s)
+    $blocosServidor = ($logs -join "`n") -split "(?:\r?\n){2,}"
+
+    foreach ($bloco in $blocosServidor) {
+        if ($bloco -match 'ENVIANDO PUB' -and $bloco.Contains($ID)) {
+            $SRV = $s
+            break
+        }
+    }
+
+    if ($SRV) { break }
+}
+
+Write-Host "Servidor que publicou: $SRV"
+
+Mostrar a mesma mensagem saindo desse servidor:
+if ($SRV) {
+    $logs = @(docker compose logs --no-log-prefix $SRV)
+    $blocosServidor = ($logs -join "`n") -split "(?:\r?\n){2,}"
+
+    $blocoFinal = $blocosServidor |
+        Where-Object {
+            $_ -match 'ENVIANDO PUB' -and $_.Contains($ID)
+        } |
+        Select-Object -First 1
+
+    $blocoFinal
+}
+----------------------------------------------------------------------
+PARTE 3 — RELÓGIO LÓGICO, REFERÊNCIA E HEARTBEAT
+----------------------------------------------------------------------
+
+Relógio lógico:
+docker compose logs --no-log-prefix client1 | Select-String -Pattern '^\[CLIENTE\]|^  Clock:|Relógio lógico' | Select-Object -First 12
+
+Serviço de referência — pedido de rank recebido:
+docker compose logs --no-log-prefix referencia | Select-String -Pattern 'Type: rank$' -Context 2,20 | Select-Object -First 1
+Confira no bloco se aparece Type: rank.
+
+Serviço de referência — resposta de rank:
+docker compose logs --no-log-prefix referencia | Select-String -Pattern 'Type: rank_reply' -Context 2,20 | Select-Object -First 1
+Confira no bloco se aparece Type: rank_reply.
+
+Todos os servidores cadastrados:
+docker compose logs referencia | Select-String -Pattern 'cadastrado'
+
+Lista de servidores — resposta mais recente:
+docker compose logs --no-log-prefix referencia | Select-String -Pattern 'Type: list_reply' -Context 2,20 | Select-Object -Last 1
+Confira no bloco se aparece Type: list_reply.
+
+Heartbeat — requisição recebida:
+docker compose logs --no-log-prefix referencia | Select-String -Pattern 'Type: heartbeat' -Context 2,20 | Select-Object -First 1
+
+Heartbeat — resposta enviada:
+docker compose logs --no-log-prefix referencia | Select-String -Pattern 'Type: heartbeat_reply' -Context 2,20 | Select-Object -First 1
+
+Contagem de mensagens "Heartbeat recebido" por texto:
+docker compose logs referencia | Select-String -Pattern 'Heartbeat recebido' | ForEach-Object { $_.Line } | Group-Object | Sort-Object Count -Descending | Format-Table Count, Name -AutoSize
+
+Servidor removido por falta de heartbeat ou que voltou:
+docker compose logs referencia | Select-String -Pattern 'removido|voltou'
+
+----------------------------------------------------------------------
+PARTE 4 — ELEIÇÃO DE COORDENADOR E ALGORITMO DE BERKELEY
+----------------------------------------------------------------------
+
+Execute na pasta do projeto, no terminal PowerShell do VS Code.
+Mantenha a mesma janela aberta para reutilizar a variável $C.
+
+1) QUEM FOI ELEITO COORDENADOR?
+docker compose logs | Select-String 'Eleito como coordenador' | Select-Object -Last 1
+
+2) GUARDAR O COORDENADOR NA VARIÁVEL $C
+$linha = docker compose logs | Select-String 'Eleito como coordenador' | Select-Object -Last 1
+$C = if ($linha -match '(server\d+)') { $Matches[1] } else { $null }
+Write-Host "Coordenador: $C"
+
+Se $C ficar vazio, pare e confira os logs. Não execute o teste de queda.
+
+3) AVISO PUB DO COORDENADOR
+docker compose logs --no-log-prefix $C | Select-String 'Type: coordinator' -Context 2,15
+
+4) COORDENADOR REGISTRADO NOS OITO SERVIDORES
+docker compose logs server1 server2 server3 server4 server5 server6 server7 server8 | Select-String 'Coordenador atual'
+
+5) PEDIDO DE ELEIÇÃO (REQ)
+docker compose logs --no-log-prefix server1 server2 server3 server4 server5 server6 server7 server8 | Select-String 'Type: election' -Context 2,15 | Select-Object -First 1
+
+6) RESPOSTA DA ELEIÇÃO (REP)
+docker compose logs --no-log-prefix server1 server2 server3 server4 server5 server6 server7 server8 | Select-String 'Type: election_reply' -Context 2,15 | Select-Object -First 1
+
+7) ALGORITMO DE BERKELEY NO COORDENADOR
+docker compose logs $C | Select-String 'Berkeley:' | Select-Object -First 5
+
+8) RELÓGIO FÍSICO E CORREÇÕES (SERVER5)
+docker compose logs server5 | Select-String 'Relógio físico inicial|Correção' | Select-Object -First 5
+
+9) RESPOSTA DO HEARTBEAT DA REFERÊNCIA
+docker compose logs --no-log-prefix referencia | Select-String 'Type: heartbeat_reply' -Context 2,15 | Select-Object -First 1
+
+10) TESTAR A QUEDA DO COORDENADOR
+Confira antes:
+Write-Host "Será interrompido: $C"
+
+Somente se $C mostrar o servidor correto:
+docker compose stop $C
+
+11) AGUARDAR 40 SEGUNDOS E VERIFICAR NOVA ELEIÇÃO
+Start-Sleep -Seconds 40
+docker compose logs -t --since=2m | Select-String 'indisponível|Iniciando eleição|Eleito como coordenador'
+
+12) INICIAR NOVAMENTE O COORDENADOR ANTERIOR
+docker compose start $C
+----------------------------------------------------------------------
+PARTE 5
+----------------------------------------------------------------------
+
+O arquivo original termina em "Parte 5 c#:", sem listar comandos ou procedimentos.
+Quando você enviar os comandos da Parte 5, também posso adaptá-los para PowerShell.
+
+FIM
+
+
+======================================================================
+PARTE 5 — REPLICAÇÃO, SINCRONIZAÇÃO E RECUPERAÇÃO
+======================================================================
+
+IMPORTANTE
+- Execute os comandos na mesma janela do PowerShell do VS Code, dentro da pasta do projeto.
+- As variáveis $RID e $blocoRep são usadas em comandos seguintes. Não feche o terminal entre essas etapas.
+- Não execute "docker compose down -v" durante esses testes: isso apagaria os volumes persistidos.
+- Os comandos abaixo mantêm os mesmos serviços e diretórios usados no roteiro original.
+
+1) O servidor manda a mensagem para os outros (tópico replication)
+
+Este bloco procura o primeiro evento ENVIANDO PUB que contenha Type: replicate_post e mostra o evento completo:
+
+$logServer1 = @(docker compose logs --no-log-prefix server1)
+$blocoRep = $null
+
+for ($i = 0; $i -lt $logServer1.Count; $i++) {
+    if ($logServer1[$i] -match 'ENVIANDO PUB') {
+        $fim = [Math]::Min($i + 25, $logServer1.Count - 1)
+        $candidato = $logServer1[$i..$fim]
+        $texto = $candidato -join "`n"
+
+        if ($texto -match 'Type:\s*replicate_post') {
+            $blocoRep = $candidato
+            $blocoRep
+            break
+        }
+    }
+}
+
+if (-not $blocoRep) {
+    Write-Host "Não encontrei ENVIANDO PUB com Type: replicate_post em server1."
+}
+
+2) Guardar o ID dessa mensagem
+
+O roteiro original procura um campo no formato Id=... . Este comando aceita também Id: ...:
+
+$RID = $null
+
+if ($blocoRep) {
+    $textoRep = $blocoRep -join "`n"
+    if ($textoRep -match 'Id[=:]\s*([^,\s]+)') {
+        $RID = $Matches[1]
+    }
+}
+
+Write-Host "RID = $RID"
+
+Se $RID ficar vazio, confira o bloco da etapa 1: talvez o ID esteja em outro formato ou não exista nesse evento. Não avance para a etapa seguinte até localizar o ID.
+
+3) Outro servidor recebendo a mesma mensagem
+
+$logServer2 = @(docker compose logs --no-log-prefix server2)
+$blocoRecebido = $null
+
+if ($RID) {
+    for ($i = 0; $i -lt $logServer2.Count; $i++) {
+        if ($logServer2[$i] -match 'RECEBENDO PUB') {
+            $fim = [Math]::Min($i + 25, $logServer2.Count - 1)
+            $candidato = $logServer2[$i..$fim]
+            $texto = $candidato -join "`n"
+
+            if (($texto -match 'Type:\s*replicate_post') -and $texto.Contains($RID)) {
+                $blocoRecebido = $candidato
+                $blocoRecebido
+                break
+            }
+        }
+    }
+}
+
+if (-not $blocoRecebido) {
+    Write-Host "Não encontrei em server2 a mensagem replicate_post com o ID $RID."
+}
+
+4) Réplicas sendo gravadas
+
+docker compose logs server2 | Select-String -Pattern 'Réplica aplicada' | Select-Object -Last 5
+
+5) Todos os servidores com a quantidade de arquivos no diretório de dados
+
+1..8 | ForEach-Object {
+    $s = "server$_"
+    $resultado = docker compose exec -T $s sh -c "find /data/$s -maxdepth 1 -type f | wc -l"
+    Write-Host "${s}: $($resultado | Select-Object -Last 1) arquivos"
+}
+
+6) Servidor cai e recupera o que perdeu
+
+Parar o server6:
+docker compose stop server6
+
+Esperar 30 segundos:
+Start-Sleep -Seconds 30
+
+Iniciar novamente o server6:
+docker compose start server6
+
+Esperar aproximadamente 10 segundos:
+Start-Sleep -Seconds 10
+
+Verificar se os dados foram sincronizados:
+docker compose logs server6 | Select-String -Pattern 'Dados sincronizados'
+
+7) Pedido de sincronização enviado pelo server6
+
+Mostrar a última requisição sync:
+$logServer6 = @(docker compose logs --no-log-prefix server6)
+$blocoSyncReq = $null
+
+for ($i = 0; $i -lt $logServer6.Count; $i++) {
+    if ($logServer6[$i] -match 'ENVIANDO REQ') {
+        $fim = [Math]::Min($i + 25, $logServer6.Count - 1)
+        $candidato = $logServer6[$i..$fim]
+        $texto = $candidato -join "`n"
+
+        if ($texto -match 'Type:\s*sync$') {
+            $blocoSyncReq = $candidato
+        }
+    }
+}
+
+if ($blocoSyncReq) {
+    $blocoSyncReq
+} else {
+    Write-Host "Não encontrei uma requisição Type: sync em server6."
+}
+
+Mostrar a última resposta sync_reply:
+$blocoSyncRep = $null
+
+for ($i = 0; $i -lt $logServer6.Count; $i++) {
+    if ($logServer6[$i] -match 'RECEBENDO REP') {
+        $fim = [Math]::Min($i + 25, $logServer6.Count - 1)
+        $candidato = $logServer6[$i..$fim]
+        $texto = $candidato -join "`n"
+
+        if ($texto -match 'Type:\s*sync_reply') {
+            $blocoSyncRep = $candidato
+        }
+    }
+}
+
+if ($blocoSyncRep) {
+    $blocoSyncRep | Select-String -Pattern 'Type:|From:|Status:|Channels:'
+} else {
+    Write-Host "Não encontrei uma resposta Type: sync_reply em server6."
+}
+
+8) Parar os clientes antes de comparar os dados
+
+docker compose stop client1 client2 client3 client4 client5 client6 client7 client8
+
+Esperar aproximadamente 10 segundos:
+Start-Sleep -Seconds 10
+
+9) Verificar se todos os servidores possuem os mesmos dados
+
+O comando abaixo calcula uma assinatura MD5 agregada dos arquivos de cada diretório /data/serverN, dentro do próprio container:
+
+1..8 | ForEach-Object {
+    $s = "server$_"
+    $resultado = docker compose exec -T $s sh -c "cd /data/$s && md5sum * | md5sum"
+    $hash = ($resultado | Select-Object -Last 1).ToString().Trim()
+    Write-Host "${s}: $hash"
+}
+
+Interpretação:
+- Se os oito hashes forem iguais, os conteúdos agregados dos arquivos comparados são idênticos.
+- Se algum hash for diferente, não conclua que a replicação falhou imediatamente: compare também a lista de arquivos e os logs de sincronização para identificar a diferença.
+- O teste pressupõe que os diretórios tenham arquivos e que o comando md5sum esteja disponível nos containers.
+
+Opcional — iniciar novamente os clientes depois da comparação:
+docker compose start client1 client2 client3 client4 client5 client6 client7 client8
+
+FIM DA PARTE 5
