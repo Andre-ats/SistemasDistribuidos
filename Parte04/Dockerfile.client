@@ -1,0 +1,22 @@
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+
+WORKDIR /src
+
+COPY Common/Common.csproj Common/
+COPY Cliente/Cliente.csproj Cliente/
+
+RUN dotnet restore Cliente/Cliente.csproj
+
+COPY Common/ Common/
+COPY Cliente/ Cliente/
+
+RUN dotnet publish Cliente/Cliente.csproj -c Release -o /app/publish --no-restore
+
+FROM mcr.microsoft.com/dotnet/runtime:8.0
+
+WORKDIR /app
+
+COPY --from=build /app/publish .
+
+ENTRYPOINT ["dotnet", "Cliente.dll"]
