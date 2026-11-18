@@ -1,4 +1,4 @@
-﻿
+
 using Common;
 using MessagePack;
 using NetMQ;
@@ -13,9 +13,7 @@ int portaServidor = int.Parse(
     Environment.GetEnvironmentVariable("SERVER_PORT") ?? "6000"
 );
 
-int portaPub = int.Parse(
-    Environment.GetEnvironmentVariable("PUB_PORT") ?? "6001"
-);
+string proxyHost = Environment.GetEnvironmentVariable("PROXY_HOST") ?? "localhost";
 
 using var socket = new RequestSocket();
 
@@ -29,25 +27,56 @@ long relogioLogico = 0;
 
 ConcurrentDictionary<string, byte> canaisInscritos = new();
 
+// No modo interativo, enquanto o usuário digita, as publicações recebidas ficam
+// guardadas e só são exibidas depois, para não misturar com o que está sendo digitado.
+int pausarMensagens = 0;
+ConcurrentQueue<string> mensagensPendentes = new();
+
 Thread threadMensagens = new(() =>
 {
     using var subscriber = new SubscriberSocket();
 
-    subscriber.Connect($"tcp://{servidorHost}:{portaPub}");
-    subscriber.Subscribe("");
+    subscriber.Connect($"tcp://{proxyHost}:5558");
+    // O socket SUB pertence exclusivamente a esta thread.
+    // As inscricoes desejadas sao compartilhadas via ConcurrentDictionary.
+    HashSet<string> topicosAtivos = new(StringComparer.Ordinal);
 
     while (true)
     {
-        string canal = subscriber.ReceiveFrameString();
+        // Sincroniza inscricoes reais do ZeroMQ com os canais do cliente.
+        foreach (string topico in topicosAtivos.ToArray())
+        {
+            if (!canaisInscritos.ContainsKey(topico))
+            {
+                subscriber.Unsubscribe(topico);
+                topicosAtivos.Remove(topico);
+            }
+        }
+
+        foreach (string topico in canaisInscritos.Keys)
+        {
+            if (topicosAtivos.Add(topico))
+            {
+                subscriber.Subscribe(topico);
+            }
+        }
+
+        // Timeout curto permite atualizar inscricoes sem bloquear a thread.
+        if (!subscriber.TryReceiveFrameString(TimeSpan.FromMilliseconds(100), out string? canal))
+        {
+            continue;
+        }
+
         byte[] dadosMensagem = subscriber.ReceiveFrameBytes();
 
-        if (!canaisInscritos.ContainsKey(canal))
+        if (canal == null || !canaisInscritos.ContainsKey(canal))
         {
             continue;
         }
 
         Envelope mensagemRecebida =
             MessagePackSerializer.Deserialize<Envelope>(dadosMensagem);
+        long recebidoEm = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
         long atual;
         long novo;
@@ -55,12 +84,26 @@ Thread threadMensagens = new(() =>
         do
         {
             atual = Volatile.Read(ref relogioLogico);
-            novo = Math.Max(atual, mensagemRecebida.Clock) + 1;
+            novo = Math.Max(atual, mensagemRecebida.Clock);
         }
         while (Interlocked.CompareExchange(ref relogioLogico, novo, atual) != atual);
 
-        Console.WriteLine();
-        Console.WriteLine($"[{canal}] {mensagemRecebida.User}: {mensagemRecebida.Text}");
+        var texto = new System.Text.StringBuilder();
+
+        texto.AppendLine(LogMensagem.Formatar("CLIENTE", "RECEBENDO PUB", mensagemRecebida));
+        texto.AppendLine($"Relógio lógico do Cliente: {novo}");
+        texto.AppendLine();
+        texto.AppendLine($"[{canal}] {mensagemRecebida.User}: {mensagemRecebida.Text}");
+        texto.AppendLine($"Enviada em: {DateTimeOffset.FromUnixTimeMilliseconds(mensagemRecebida.Ts):O}");
+        texto.AppendLine($"Recebida em: {DateTimeOffset.FromUnixTimeMilliseconds(recebidoEm):O}");
+
+        if (Volatile.Read(ref pausarMensagens) == 1)
+        {
+            mensagensPendentes.Enqueue(texto.ToString());
+            continue;
+        }
+
+        Console.Write(texto.ToString());
         Console.Write("Escolha uma opção: ");
     }
 });
@@ -76,12 +119,9 @@ if (modoCliente.Equals("auto", StringComparison.OrdinalIgnoreCase))
     string usuario =
         Environment.GetEnvironmentVariable("CLIENT_USER") ?? "cliente1";
 
-    string canal =
-        Environment.GetEnvironmentVariable("CLIENT_CHANNEL") ?? "canal_cliente1";
-
     Console.WriteLine($"Modo automático iniciado: {usuario}");
 
-    Envelope? EnviarAutomatico(string tipo, string? nomeCanal = null)
+    Envelope? EnviarAutomatico(string tipo, string? nomeCanal = null, string? texto = null)
     {
         for (int tentativa = 1; tentativa <= 5; tentativa++)
         {
@@ -98,7 +138,8 @@ if (modoCliente.Equals("auto", StringComparison.OrdinalIgnoreCase))
                     Clock = Interlocked.Increment(ref relogioLogico),
                     From = "Cliente",
                     User = usuario,
-                    Channel = nomeCanal
+                    Channel = nomeCanal,
+                    Text = texto
                 };
 
                 LogMensagem.Exibir("CLIENTE", "ENVIANDO REQ", requisicao);
@@ -130,10 +171,12 @@ if (modoCliente.Equals("auto", StringComparison.OrdinalIgnoreCase))
                 do
                 {
                     atual = Volatile.Read(ref relogioLogico);
-                    novo = Math.Max(atual, resposta.Clock) + 1;
+                    novo = Math.Max(atual, resposta.Clock);
                 }
                 while (Interlocked.CompareExchange(
                     ref relogioLogico, novo, atual) != atual);
+
+                Console.WriteLine($"[{usuario}] Relógio lógico do Cliente: {novo}");
 
                 return resposta;
             }
@@ -147,79 +190,157 @@ if (modoCliente.Equals("auto", StringComparison.OrdinalIgnoreCase))
         return null;
     }
 
+    // O servidor persiste o histórico, mas as sessões e participantes são voláteis.
+    // Após reinício, refazemos login e reinscrevemos o bot nos canais anteriores.
+    bool RecuperarSessao()
+    {
+        Console.WriteLine($"[{usuario}] RECUPERACAO: servidor perdeu a sessão; refazendo login...");
+        Envelope? novoLogin = EnviarAutomatico("login");
+        if (novoLogin?.Status != "ok")
+        {
+            Console.WriteLine($"[{usuario}] RECUPERACAO: login não realizado: {novoLogin?.Error ?? "sem resposta"}");
+            return false;
+        }
+
+        Envelope? listagemAtual = EnviarAutomatico("list_channels");
+        if (listagemAtual?.Status != "ok")
+        {
+            Console.WriteLine($"[{usuario}] RECUPERACAO: falha ao consultar canais.");
+            return false;
+        }
+
+        var existentes = new HashSet<string>(listagemAtual.Channels ?? new List<string>());
+        var desejados = canaisInscritos.Keys.ToList();
+
+        canaisInscritos.Clear();
+        foreach (string nome in desejados)
+        {
+            if (!existentes.Contains(nome)) continue;
+            Envelope? entrada = EnviarAutomatico("join_channel", nome);
+            if (entrada?.Status == "ok" || entrada?.Error == "Usuário já está no canal")
+            {
+                canaisInscritos.TryAdd(nome, 0);
+                Console.WriteLine($"[{usuario}] RECUPERACAO: inscrito novamente em '{nome}'");
+            }
+        }
+        Console.WriteLine($"[{usuario}] RECUPERACAO CONCLUIDA: {canaisInscritos.Count} canais.");
+        return true;
+    }
+
+    Envelope? EnviarComRecuperacao(string tipo, string? nomeCanal = null, string? texto = null)
+    {
+        Envelope? resposta = EnviarAutomatico(tipo, nomeCanal, texto);
+        // Não repetir uma publicação que apenas perdeu a resposta: isso poderia duplicá-la.
+        // Só repetimos quando o servidor confirmou que a sessão não existe.
+        if (resposta?.Status == "error" && resposta.Error == "Usuário não está registrado")
+        {
+            if (RecuperarSessao())
+                return EnviarAutomatico(tipo, nomeCanal, texto);
+        }
+        return resposta;
+    }
+
+    // Em caso de erro, o login é repetido até ser aceito.
     Envelope? login = EnviarAutomatico("login");
 
-    if (login?.Status != "ok")
+    while (login?.Status != "ok")
     {
         Console.WriteLine(
             $"[{usuario}] Login falhou: {login?.Error ?? "Servidor indisponível"}"
         );
 
-        Environment.ExitCode = 1;
-        return;
+        // O bot reiniciou, mas o servidor ainda guarda a sessão antiga: encerra e entra de novo.
+        if (login?.Error == "Usuário já está registrado")
+        {
+            EnviarAutomatico("logout");
+        }
+        else
+        {
+            Thread.Sleep(2000);
+        }
+
+        Console.WriteLine($"[{usuario}] Repetindo login...");
+        login = EnviarAutomatico("login");
     }
 
     Console.WriteLine($"[{usuario}] Login realizado!");
 
-    Envelope? listagem = EnviarAutomatico("list_channels");
+    Random aleatorio = new();
+    string[] textos = { "Bom dia!", "Tudo certo?", "Alguém por aqui?", "Mensagem de teste", "Olá pessoal!", "Mais uma mensagem", "Teste Pub/Sub" };
 
-    if (listagem?.Status != "ok")
+    while (true)
     {
-        Console.WriteLine($"[{usuario}] Falha ao listar canais.");
-        Environment.ExitCode = 1;
-        return;
-    }
-
-    Console.WriteLine($"[{usuario}] Canais disponíveis:");
-
-    foreach (string nome in listagem.Channels ?? new List<string>())
-    {
-        Console.WriteLine($" - {nome}");
-    }
-
-    if (listagem.Channels?.Contains(canal) == true)
-    {
-        Console.WriteLine($"[{usuario}] Canal '{canal}' já existe.");
-    }
-    else
-    {
-        Envelope? criacao = EnviarAutomatico("create_channel", canal);
-
-        if (criacao?.Status == "ok")
+        Envelope? listagem = EnviarComRecuperacao("list_channels");
+        if (listagem?.Status != "ok")
         {
-            Console.WriteLine($"[{usuario}] Canal '{canal}' criado!");
+            Console.WriteLine($"[{usuario}] Não foi possível listar canais.");
+            Thread.Sleep(2000);
+            continue;
         }
-        else
+
+        List<string> disponiveis = listagem.Channels ?? new List<string>();
+        if (disponiveis.Count < 5)
         {
-            Console.WriteLine(
-                $"[{usuario}] Falha ao criar canal: {criacao?.Error}"
-            );
+            string novoCanal = $"canal_{usuario}_{Guid.NewGuid().ToString("N")[..6]}";
+            Envelope? criacao = EnviarComRecuperacao("create_channel", novoCanal);
+            if (criacao?.Status == "ok")
+            {
+                disponiveis.Add(novoCanal);
+                Console.WriteLine($"[{usuario}] Canal '{novoCanal}' criado!");
+            }
+        }
 
-            Environment.ExitCode = 1;
-            return;
+        if (canaisInscritos.Count < 3)
+        {
+            List<string> candidatos = disponiveis.Where(c => !canaisInscritos.ContainsKey(c)).ToList();
+            if (candidatos.Count > 0)
+            {
+                string escolhido = candidatos[aleatorio.Next(candidatos.Count)];
+                Envelope? entrada = EnviarComRecuperacao("join_channel", escolhido);
+                if (entrada?.Status == "ok")
+                {
+                    canaisInscritos.TryAdd(escolhido, 0);
+                    Console.WriteLine($"[{usuario}] Inscrito no canal '{escolhido}'");
+                }
+            }
+        }
+
+        List<string> inscritos = canaisInscritos.Keys.ToList();
+        if (inscritos.Count == 0)
+        {
+            Thread.Sleep(1000);
+            continue;
+        }
+
+        string canalEscolhido = inscritos[aleatorio.Next(inscritos.Count)];
+        for (int i = 0; i < 10; i++)
+        {
+            string texto = textos[aleatorio.Next(textos.Length)];
+            Envelope? resposta = EnviarComRecuperacao("post", canalEscolhido, texto);
+            Console.WriteLine($"[{usuario}] Publicação em {canalEscolhido}: {resposta?.Status ?? "sem resposta"}");
+            Thread.Sleep(1000);
         }
     }
 
-    Envelope? logout = EnviarAutomatico("logout");
-
-    if (logout?.Status == "ok")
-    {
-        Console.WriteLine($"[{usuario}] Logout realizado!");
-    }
-    else
-    {
-        Console.WriteLine($"[{usuario}] Falha no logout.");
-        Environment.ExitCode = 1;
-        return;
-    }
-
-    Console.WriteLine($"[{usuario}] Operações automáticas concluídas.");
-    return;
 }
 
 
 while (true)
 {
+    // Libera a exibição e mostra o que chegou enquanto o usuário digitava.
+    Volatile.Write(ref pausarMensagens, 0);
+
+    if (!mensagensPendentes.IsEmpty)
+    {
+        Console.WriteLine();
+        Console.WriteLine($"===== Mensagens recebidas enquanto você digitava: {mensagensPendentes.Count} =====");
+
+        while (mensagensPendentes.TryDequeue(out string? pendente))
+        {
+            Console.Write(pendente);
+        }
+    }
+
     Console.WriteLine();
     Console.WriteLine("===== BBS =====");
 
@@ -240,6 +361,9 @@ while (true)
 
     Console.Write("Escolha uma opção: ");
     string? opcao = Console.ReadLine();
+
+    // A partir daqui o usuário vai digitar: segura as publicações recebidas.
+    Volatile.Write(ref pausarMensagens, 1);
 
     if (opcao == null)
     {
@@ -357,6 +481,8 @@ while (true)
         continue;
     }
 
+    // Timestamp do envio (e não de quando o menu montou a mensagem).
+    mensagem.Ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
     mensagem.Clock = Interlocked.Increment(ref relogioLogico);
     byte[] dados = MessagePackSerializer.Serialize(mensagem);
 
@@ -373,7 +499,7 @@ while (true)
     do
     {
         atual = Volatile.Read(ref relogioLogico);
-        novo = Math.Max(atual, resposta.Clock) + 1;
+        novo = Math.Max(atual, resposta.Clock);
     }
     while (Interlocked.CompareExchange(ref relogioLogico, novo, atual) != atual);
 

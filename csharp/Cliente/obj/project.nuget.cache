@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "aQcKMmyprGfiJZS6Kn+DbcOhbjR4dYpitFRC8kyHAM5Qtw/uxJxMnaSnNYx27kMRjJY+9Rv6OB6ITIfYPM6Iiw==",
+  "dgSpecHash": "aZ+kWyU8By+lKju4TGJZgLAAPhM58f+tO5l6IczADYn0fuQI38msiHDNYXs8zJPAegVUfmV8rm11JNZP7HX8rA==",
   "success": true,
-  "projectFilePath": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Cliente/Cliente.csproj",
+  "projectFilePath": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Cliente/Cliente.csproj",
   "expectedPackageFiles": [
     "/home/andre/.nuget/packages/asyncio/0.1.69/asyncio.0.1.69.nupkg.sha512",
     "/home/andre/.nuget/packages/messagepack/3.1.12/messagepack.3.1.12.nupkg.sha512",

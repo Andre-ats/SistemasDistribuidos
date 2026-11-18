@@ -8,6 +8,11 @@ public static class LogMensagem
 {
     public static void Exibir(string origem, string acao, Envelope mensagem)
     {
+        Console.WriteLine(Formatar(origem, acao, mensagem));
+    }
+
+    public static string Formatar(string origem, string acao, Envelope mensagem)
+    {
         var texto = new StringBuilder();
 
         texto.AppendLine();
@@ -22,6 +27,10 @@ public static class LogMensagem
         texto.AppendLine($"  Status: {mensagem.Status}");
         texto.AppendLine($"  Error: {mensagem.Error}");
         texto.AppendLine($"  Id: {mensagem.Id}");
+        texto.AppendLine($"  Server: {mensagem.Server}");
+        texto.AppendLine($"  Rank: {mensagem.Rank}");
+        texto.AppendLine($"  Address: {mensagem.Address}");
+        texto.AppendLine($"  Time: {mensagem.Time}");
 
         if (mensagem.Channels != null)
         {
@@ -52,6 +61,36 @@ public static class LogMensagem
             texto.AppendLine("  Messages: null");
         }
 
-        Console.WriteLine(texto.ToString());
+        if (mensagem.Servers != null)
+        {
+            texto.AppendLine("  Servers:");
+
+            foreach (ServidorInfo item in mensagem.Servers)
+            {
+                texto.AppendLine(
+                    $"    - Name={item.Name}, Rank={item.Rank}, Address={item.Address}"
+                );
+            }
+        }
+        else
+        {
+            texto.AppendLine("  Servers: null");
+        }
+
+        if (mensagem.Logins != null)
+        {
+            texto.AppendLine("  Logins:");
+
+            foreach (LoginRegistro item in mensagem.Logins)
+            {
+                texto.AppendLine($"    - User={item.User}, Ts={item.Ts}");
+            }
+        }
+        else
+        {
+            texto.AppendLine("  Logins: null");
+        }
+
+        return texto.ToString();
     }
 }

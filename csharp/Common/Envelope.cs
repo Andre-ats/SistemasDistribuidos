@@ -39,4 +39,22 @@ public class Envelope
     public List<Envelope>? Messages { get; set; }
     [Key("id")]
     public string? Id { get; set; }
+
+    [Key("server")]
+    public string? Server { get; set; }
+
+    [Key("rank")]
+    public int? Rank { get; set; }
+
+    [Key("address")]
+    public string? Address { get; set; }
+
+    [Key("time")]
+    public long? Time { get; set; }
+
+    [Key("servers")]
+    public List<ServidorInfo>? Servers { get; set; }
+
+    [Key("logins")]
+    public List<LoginRegistro>? Logins { get; set; }
 }

@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Cliente/Cliente.csproj": {}
+    "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Cliente/Cliente.csproj": {}
   },
   "projects": {
-    "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Cliente/Cliente.csproj": {
+    "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Cliente/Cliente.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Cliente/Cliente.csproj",
+        "projectUniqueName": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Cliente/Cliente.csproj",
         "projectName": "Cliente",
-        "projectPath": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Cliente/Cliente.csproj",
+        "projectPath": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Cliente/Cliente.csproj",
         "packagesPath": "/home/andre/.nuget/packages/",
-        "outputPath": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Cliente/obj/",
+        "outputPath": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Cliente/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/home/andre/.nuget/NuGet/NuGet.Config"
@@ -26,8 +26,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Common/Common.csproj": {
-                "projectPath": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Common/Common.csproj"
+              "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Common/Common.csproj": {
+                "projectPath": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Common/Common.csproj"
               }
             }
           }
@@ -67,14 +67,14 @@
         }
       }
     },
-    "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Common/Common.csproj": {
+    "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Common/Common.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Common/Common.csproj",
+        "projectUniqueName": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Common/Common.csproj",
         "projectName": "Common",
-        "projectPath": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Common/Common.csproj",
+        "projectPath": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Common/Common.csproj",
         "packagesPath": "/home/andre/.nuget/packages/",
-        "outputPath": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/Projeto/csharp/Common/obj/",
+        "outputPath": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Common/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/home/andre/.nuget/NuGet/NuGet.Config"

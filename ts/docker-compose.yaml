@@ -1,0 +1,268 @@
+
+x-server-base: &server-base
+  build:
+    context: .
+    dockerfile: Dockerfile.server
+  restart: unless-stopped
+  depends_on:
+    - proxy
+    - referencia
+
+x-client-base: &client-base
+  build:
+    context: .
+    dockerfile: Dockerfile.client
+  restart: unless-stopped
+
+services:
+  proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+    restart: unless-stopped
+
+  referencia:
+    build:
+      context: .
+      dockerfile: Dockerfile.reference
+    restart: unless-stopped
+    environment:
+      REFERENCE_PORT: "5000"
+      HEARTBEAT_TIMEOUT: "30"
+
+  server1:
+    <<: *server-base
+    environment:
+      SERVER_ID: server1
+      SERVER_PORT: "6000"
+      SYNC_PORT: "6002"
+      PUB_PORT: "6001"
+      PROXY_HOST: proxy
+      DATA_DIR: /data
+      REFERENCE_HOST: referencia
+      REFERENCE_PORT: "5000"
+    volumes:
+      - server1_data:/data
+
+  server2:
+    <<: *server-base
+    environment:
+      SERVER_ID: server2
+      SERVER_PORT: "7000"
+      SYNC_PORT: "7002"
+      PUB_PORT: "7001"
+      PROXY_HOST: proxy
+      DATA_DIR: /data
+      REFERENCE_HOST: referencia
+      REFERENCE_PORT: "5000"
+    volumes:
+      - server2_data:/data
+
+  server3:
+    <<: *server-base
+    environment:
+      SERVER_ID: server3
+      SERVER_PORT: "8000"
+      SYNC_PORT: "8002"
+      PUB_PORT: "8001"
+      PROXY_HOST: proxy
+      DATA_DIR: /data
+      REFERENCE_HOST: referencia
+      REFERENCE_PORT: "5000"
+      CLOCK_DRIFT_MS: "4000"
+    volumes:
+      - server3_data:/data
+
+  server4:
+    <<: *server-base
+    environment:
+      SERVER_ID: server4
+      SERVER_PORT: "8100"
+      SYNC_PORT: "8102"
+      PUB_PORT: "8101"
+      PROXY_HOST: proxy
+      DATA_DIR: /data
+      REFERENCE_HOST: referencia
+      REFERENCE_PORT: "5000"
+    volumes:
+      - server4_data:/data
+
+  server5:
+    <<: *server-base
+    environment:
+      SERVER_ID: server5
+      SERVER_PORT: "8200"
+      SYNC_PORT: "8202"
+      PUB_PORT: "8201"
+      PROXY_HOST: proxy
+      DATA_DIR: /data
+      REFERENCE_HOST: referencia
+      REFERENCE_PORT: "5000"
+      CLOCK_DRIFT_MS: "-3000"
+    volumes:
+      - server5_data:/data
+
+  server6:
+    <<: *server-base
+    environment:
+      SERVER_ID: server6
+      SERVER_PORT: "8300"
+      SYNC_PORT: "8302"
+      PUB_PORT: "8301"
+      PROXY_HOST: proxy
+      DATA_DIR: /data
+      REFERENCE_HOST: referencia
+      REFERENCE_PORT: "5000"
+    volumes:
+      - server6_data:/data
+
+  server7:
+    <<: *server-base
+    environment:
+      SERVER_ID: server7
+      SERVER_PORT: "8400"
+      SYNC_PORT: "8402"
+      PUB_PORT: "8401"
+      PROXY_HOST: proxy
+      DATA_DIR: /data
+      REFERENCE_HOST: referencia
+      REFERENCE_PORT: "5000"
+      CLOCK_DRIFT_MS: "2500"
+    volumes:
+      - server7_data:/data
+
+  server8:
+    <<: *server-base
+    environment:
+      SERVER_ID: server8
+      SERVER_PORT: "8500"
+      SYNC_PORT: "8502"
+      PUB_PORT: "8501"
+      PROXY_HOST: proxy
+      DATA_DIR: /data
+      REFERENCE_HOST: referencia
+      REFERENCE_PORT: "5000"
+    volumes:
+      - server8_data:/data
+
+  client1:
+    <<: *client-base
+    environment:
+      SERVER_HOST: server1
+      SERVER_PORT: "6000"
+      PUB_PORT: "6001"
+      PROXY_HOST: proxy
+      CLIENT_MODE: auto
+      CLIENT_USER: cliente1
+      CLIENT_CHANNEL: canal_cliente1
+    depends_on:
+      - proxy
+      - server1
+
+  client2:
+    <<: *client-base
+    environment:
+      SERVER_HOST: server1
+      SERVER_PORT: "6000"
+      PUB_PORT: "7001"
+      PROXY_HOST: proxy
+      CLIENT_MODE: auto
+      CLIENT_USER: cliente2
+      CLIENT_CHANNEL: canal_cliente2
+    depends_on:
+      - proxy
+      - server1
+
+  client3:
+    <<: *client-base
+    environment:
+      SERVER_HOST: server3
+      SERVER_PORT: "8000"
+      PUB_PORT: "8001"
+      PROXY_HOST: proxy
+      CLIENT_MODE: auto
+      CLIENT_USER: cliente3
+      CLIENT_CHANNEL: canal_cliente3
+    depends_on:
+      - proxy
+      - server3
+
+  client4:
+    <<: *client-base
+    environment:
+      SERVER_HOST: server4
+      SERVER_PORT: "8100"
+      PUB_PORT: "8101"
+      PROXY_HOST: proxy
+      CLIENT_MODE: auto
+      CLIENT_USER: cliente4
+      CLIENT_CHANNEL: canal_cliente4
+    depends_on:
+      - proxy
+      - server4
+
+  client5:
+    <<: *client-base
+    environment:
+      SERVER_HOST: server5
+      SERVER_PORT: "8200"
+      PUB_PORT: "8201"
+      PROXY_HOST: proxy
+      CLIENT_MODE: auto
+      CLIENT_USER: cliente5
+      CLIENT_CHANNEL: canal_cliente5
+    depends_on:
+      - proxy
+      - server5
+
+  client6:
+    <<: *client-base
+    environment:
+      SERVER_HOST: server6
+      SERVER_PORT: "8300"
+      PUB_PORT: "8301"
+      PROXY_HOST: proxy
+      CLIENT_MODE: auto
+      CLIENT_USER: cliente6
+      CLIENT_CHANNEL: canal_cliente6
+    depends_on:
+      - proxy
+      - server6
+
+  client7:
+    <<: *client-base
+    environment:
+      SERVER_HOST: server7
+      SERVER_PORT: "8400"
+      PUB_PORT: "8401"
+      PROXY_HOST: proxy
+      CLIENT_MODE: auto
+      CLIENT_USER: cliente7
+      CLIENT_CHANNEL: canal_cliente7
+    depends_on:
+      - proxy
+      - server7
+
+  client8:
+    <<: *client-base
+    environment:
+      SERVER_HOST: server8
+      SERVER_PORT: "8500"
+      PUB_PORT: "8501"
+      PROXY_HOST: proxy
+      CLIENT_MODE: auto
+      CLIENT_USER: cliente8
+      CLIENT_CHANNEL: canal_cliente8
+    depends_on:
+      - proxy
+      - server8
+
+volumes:
+  server1_data:
+  server2_data:
+  server3_data:
+  server4_data:
+  server5_data:
+  server6_data:
+  server7_data:
+  server8_data:

@@ -36,7 +36,10 @@ public class Persistencia
     {
         string caminho = Path.Combine(pastaDados, "logins.msgpack");
 
-        byte[] dados = MessagePackSerializer.Serialize(logins);
+        // Ordem fixa: assim todas as réplicas gravam o arquivo igual.
+        byte[] dados = MessagePackSerializer.Serialize(
+            logins.OrderBy(l => l.Ts).ThenBy(l => l.User, StringComparer.Ordinal).ToList()
+        );
 
         File.WriteAllBytes(caminho, dados);
     }
@@ -62,8 +65,22 @@ public class Persistencia
     {
         string caminho = Path.Combine(pastaDados, "canais.msgpack");
 
-        byte[] dados = MessagePackSerializer.Serialize(canais.ToList());
+        byte[] dados = MessagePackSerializer.Serialize(
+            canais.OrderBy(canal => canal, StringComparer.Ordinal).ToList()
+        );
 
         File.WriteAllBytes(caminho, dados);
+    }
+    public List<Envelope> CarregarMensagens(string canal)
+    {
+        string caminho = Path.Combine(pastaDados, $"mensagens_{canal}.msgpack");
+        if (!File.Exists(caminho)) return new List<Envelope>();
+        return MessagePackSerializer.Deserialize<List<Envelope>>(File.ReadAllBytes(caminho));
+    }
+
+    public void SalvarMensagens(string canal, List<Envelope> mensagens)
+    {
+        string caminho = Path.Combine(pastaDados, $"mensagens_{canal}.msgpack");
+        File.WriteAllBytes(caminho, MessagePackSerializer.Serialize(mensagens));
     }
 }
