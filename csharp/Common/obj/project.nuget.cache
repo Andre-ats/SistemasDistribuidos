@@ -1,13 +1,16 @@
 {
   "version": 2,
-  "dgSpecHash": "2raxSQyOtt0Cz96DgcbMYU4+S/atLcbKVMxeHndj+T0HqD6h+oqloU/lsDdCPUYWDXt+nc27NT4qJoTrBMfrxw==",
+  "dgSpecHash": "YxA7bcXCmz0=",
   "success": true,
-  "projectFilePath": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Common/Common.csproj",
+  "projectFilePath": "C:\\Users\\cauem\\Desktop\\Projeto\\csharp\\Common\\Common.csproj",
   "expectedPackageFiles": [
-    "/home/andre/.nuget/packages/messagepack/3.1.12/messagepack.3.1.12.nupkg.sha512",
-    "/home/andre/.nuget/packages/messagepack.annotations/3.1.12/messagepack.annotations.3.1.12.nupkg.sha512",
-    "/home/andre/.nuget/packages/messagepackanalyzer/3.1.12/messagepackanalyzer.3.1.12.nupkg.sha512",
-    "/home/andre/.nuget/packages/microsoft.net.stringtools/17.11.4/microsoft.net.stringtools.17.11.4.nupkg.sha512"
+    "C:\\Users\\cauem\\.nuget\\packages\\messagepack\\3.1.12\\messagepack.3.1.12.nupkg.sha512",
+    "C:\\Users\\cauem\\.nuget\\packages\\messagepack.annotations\\3.1.12\\messagepack.annotations.3.1.12.nupkg.sha512",
+    "C:\\Users\\cauem\\.nuget\\packages\\messagepackanalyzer\\3.1.12\\messagepackanalyzer.3.1.12.nupkg.sha512",
+    "C:\\Users\\cauem\\.nuget\\packages\\microsoft.net.stringtools\\17.11.4\\microsoft.net.stringtools.17.11.4.nupkg.sha512",
+    "C:\\Users\\cauem\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.31\\microsoft.netcore.app.ref.8.0.31.nupkg.sha512",
+    "C:\\Users\\cauem\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.31\\microsoft.windowsdesktop.app.ref.8.0.31.nupkg.sha512",
+    "C:\\Users\\cauem\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\8.0.31\\microsoft.aspnetcore.app.ref.8.0.31.nupkg.sha512"
   ],
   "logs": []
 }

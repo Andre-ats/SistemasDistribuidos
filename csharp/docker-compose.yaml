@@ -19,6 +19,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.proxy
+    init: true
     restart: unless-stopped
     ports:
       - "5557:5557"

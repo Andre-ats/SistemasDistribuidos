@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Cliente/Cliente.csproj": {}
+    "C:\\Users\\cauem\\Desktop\\Projeto\\csharp\\Cliente\\Cliente.csproj": {}
   },
   "projects": {
-    "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Cliente/Cliente.csproj": {
+    "C:\\Users\\cauem\\Desktop\\Projeto\\csharp\\Cliente\\Cliente.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Cliente/Cliente.csproj",
+        "projectUniqueName": "C:\\Users\\cauem\\Desktop\\Projeto\\csharp\\Cliente\\Cliente.csproj",
         "projectName": "Cliente",
-        "projectPath": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Cliente/Cliente.csproj",
-        "packagesPath": "/home/andre/.nuget/packages/",
-        "outputPath": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Cliente/obj/",
+        "projectPath": "C:\\Users\\cauem\\Desktop\\Projeto\\csharp\\Cliente\\Cliente.csproj",
+        "packagesPath": "C:\\Users\\cauem\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\cauem\\Desktop\\Projeto\\csharp\\Cliente\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/home/andre/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\cauem\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -24,10 +24,11 @@
         },
         "frameworks": {
           "net8.0": {
+            "framework": "net8.0",
             "targetAlias": "net8.0",
             "projectReferences": {
-              "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Common/Common.csproj": {
-                "projectPath": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Common/Common.csproj"
+              "C:\\Users\\cauem\\Desktop\\Projeto\\csharp\\Common\\Common.csproj": {
+                "projectPath": "C:\\Users\\cauem\\Desktop\\Projeto\\csharp\\Common\\Common.csproj"
               }
             }
           }
@@ -36,10 +37,17 @@
           "warnAsError": [
             "NU1605"
           ]
-        }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
       },
       "frameworks": {
         "net8.0": {
+          "framework": "net8.0",
           "targetAlias": "net8.0",
           "dependencies": {
             "NetMQ": {
@@ -58,26 +66,44 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.win-x64",
+              "version": "[8.0.31, 8.0.31]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/8.0.131/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.401/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Common/Common.csproj": {
+    "C:\\Users\\cauem\\Desktop\\Projeto\\csharp\\Common\\Common.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Common/Common.csproj",
+        "projectUniqueName": "C:\\Users\\cauem\\Desktop\\Projeto\\csharp\\Common\\Common.csproj",
         "projectName": "Common",
-        "projectPath": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Common/Common.csproj",
-        "packagesPath": "/home/andre/.nuget/packages/",
-        "outputPath": "/home/andre/Documents/Programacao/FEI/SistemasDistribuidos/csharp/Common/obj/",
+        "projectPath": "C:\\Users\\cauem\\Desktop\\Projeto\\csharp\\Common\\Common.csproj",
+        "packagesPath": "C:\\Users\\cauem\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\cauem\\Desktop\\Projeto\\csharp\\Common\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/home/andre/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\cauem\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -87,6 +113,7 @@
         },
         "frameworks": {
           "net8.0": {
+            "framework": "net8.0",
             "targetAlias": "net8.0",
             "projectReferences": {}
           }
@@ -95,10 +122,17 @@
           "warnAsError": [
             "NU1605"
           ]
-        }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
       },
       "frameworks": {
         "net8.0": {
+          "framework": "net8.0",
           "targetAlias": "net8.0",
           "dependencies": {
             "MessagePack": {
@@ -117,12 +151,26 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[8.0.31, 8.0.31]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/8.0.131/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.401/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
