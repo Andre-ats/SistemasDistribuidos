@@ -1,0 +1,321 @@
+
+# Projeto completo: as 4 linguagens rodando ao mesmo tempo.
+# 4 integrantes -> 4 linguagens, cada uma com 2 servidores e 2 clientes (bots).
+# Todos usam o mesmo proxy (Pub/Sub) e o mesmo serviço de referência, então
+# clientes e servidores de linguagens diferentes trocam mensagens entre si.
+#
+# Execução (nesta pasta):  docker compose up --build -d
+
+services:
+  proxy:
+    build:
+      context: ./csharp
+      dockerfile: Dockerfile.proxy
+    init: true
+    restart: unless-stopped
+
+  referencia:
+    build:
+      context: ./csharp
+      dockerfile: Dockerfile.reference
+    restart: unless-stopped
+    environment:
+      REFERENCE_PORT: "5000"
+      HEARTBEAT_TIMEOUT: "30"
+
+  # ===== C# =====
+
+  cs-server1:
+    build:
+      context: ./csharp
+      dockerfile: Dockerfile.server
+    restart: unless-stopped
+    depends_on:
+      - proxy
+      - referencia
+    environment:
+      SERVER_ID: cs-server1
+      SERVER_PORT: "6000"
+      SYNC_PORT: "6002"
+      PROXY_HOST: proxy
+      DATA_DIR: /data
+      REFERENCE_HOST: referencia
+      REFERENCE_PORT: "5000"
+    volumes:
+      - cs-server1_data:/data
+
+  cs-server2:
+    build:
+      context: ./csharp
+      dockerfile: Dockerfile.server
+    restart: unless-stopped
+    depends_on:
+      - proxy
+      - referencia
+    environment:
+      SERVER_ID: cs-server2
+      SERVER_PORT: "7000"
+      SYNC_PORT: "7002"
+      PROXY_HOST: proxy
+      DATA_DIR: /data
+      REFERENCE_HOST: referencia
+      REFERENCE_PORT: "5000"
+    volumes:
+      - cs-server2_data:/data
+
+  cs-client1:
+    build:
+      context: ./csharp
+      dockerfile: Dockerfile.client
+    restart: unless-stopped
+    depends_on:
+      - proxy
+      - cs-server1
+    environment:
+      SERVER_HOST: cs-server1
+      SERVER_PORT: "6000"
+      PROXY_HOST: proxy
+      CLIENT_MODE: auto
+      CLIENT_USER: cs_bot1
+
+  cs-client2:
+    build:
+      context: ./csharp
+      dockerfile: Dockerfile.client
+    restart: unless-stopped
+    depends_on:
+      - proxy
+      - cs-server2
+    environment:
+      SERVER_HOST: cs-server2
+      SERVER_PORT: "7000"
+      PROXY_HOST: proxy
+      CLIENT_MODE: auto
+      CLIENT_USER: cs_bot2
+
+  # ===== Python =====
+
+  py-server1:
+    build:
+      context: ./python
+      dockerfile: Dockerfile.server
+    init: true
+    restart: unless-stopped
+    depends_on:
+      - proxy
+      - referencia
+    environment:
+      SERVER_ID: py-server1
+      SERVER_PORT: "8000"
+      SYNC_PORT: "8002"
+      PROXY_HOST: proxy
+      DATA_DIR: /data
+      REFERENCE_HOST: referencia
+      REFERENCE_PORT: "5000"
+      CLOCK_DRIFT_MS: "4000"
+    volumes:
+      - py-server1_data:/data
+
+  py-server2:
+    build:
+      context: ./python
+      dockerfile: Dockerfile.server
+    init: true
+    restart: unless-stopped
+    depends_on:
+      - proxy
+      - referencia
+    environment:
+      SERVER_ID: py-server2
+      SERVER_PORT: "8100"
+      SYNC_PORT: "8102"
+      PROXY_HOST: proxy
+      DATA_DIR: /data
+      REFERENCE_HOST: referencia
+      REFERENCE_PORT: "5000"
+    volumes:
+      - py-server2_data:/data
+
+  py-client1:
+    build:
+      context: ./python
+      dockerfile: Dockerfile.client
+    init: true
+    restart: unless-stopped
+    depends_on:
+      - proxy
+      - py-server1
+    environment:
+      SERVER_HOST: py-server1
+      SERVER_PORT: "8000"
+      PROXY_HOST: proxy
+      CLIENT_MODE: auto
+      CLIENT_USER: py_bot1
+
+  py-client2:
+    build:
+      context: ./python
+      dockerfile: Dockerfile.client
+    init: true
+    restart: unless-stopped
+    depends_on:
+      - proxy
+      - py-server2
+    environment:
+      SERVER_HOST: py-server2
+      SERVER_PORT: "8100"
+      PROXY_HOST: proxy
+      CLIENT_MODE: auto
+      CLIENT_USER: py_bot2
+
+  # ===== Java =====
+
+  java-server1:
+    build:
+      context: ./java
+      dockerfile: Dockerfile.server
+    restart: unless-stopped
+    depends_on:
+      - proxy
+      - referencia
+    environment:
+      SERVER_ID: java-server1
+      SERVER_PORT: "8200"
+      SYNC_PORT: "8202"
+      PROXY_HOST: proxy
+      DATA_DIR: /data
+      REFERENCE_HOST: referencia
+      REFERENCE_PORT: "5000"
+      CLOCK_DRIFT_MS: "-3000"
+    volumes:
+      - java-server1_data:/data
+
+  java-server2:
+    build:
+      context: ./java
+      dockerfile: Dockerfile.server
+    restart: unless-stopped
+    depends_on:
+      - proxy
+      - referencia
+    environment:
+      SERVER_ID: java-server2
+      SERVER_PORT: "8300"
+      SYNC_PORT: "8302"
+      PROXY_HOST: proxy
+      DATA_DIR: /data
+      REFERENCE_HOST: referencia
+      REFERENCE_PORT: "5000"
+    volumes:
+      - java-server2_data:/data
+
+  java-client1:
+    build:
+      context: ./java
+      dockerfile: Dockerfile.client
+    restart: unless-stopped
+    depends_on:
+      - proxy
+      - java-server1
+    environment:
+      SERVER_HOST: java-server1
+      SERVER_PORT: "8200"
+      PROXY_HOST: proxy
+      CLIENT_MODE: auto
+      CLIENT_USER: java_bot1
+
+  java-client2:
+    build:
+      context: ./java
+      dockerfile: Dockerfile.client
+    restart: unless-stopped
+    depends_on:
+      - proxy
+      - java-server2
+    environment:
+      SERVER_HOST: java-server2
+      SERVER_PORT: "8300"
+      PROXY_HOST: proxy
+      CLIENT_MODE: auto
+      CLIENT_USER: java_bot2
+
+  # ===== TypeScript =====
+
+  ts-server1:
+    build:
+      context: ./ts
+      dockerfile: Dockerfile.server
+    restart: unless-stopped
+    depends_on:
+      - proxy
+      - referencia
+    environment:
+      SERVER_ID: ts-server1
+      SERVER_PORT: "8400"
+      SYNC_PORT: "8402"
+      PROXY_HOST: proxy
+      DATA_DIR: /data
+      REFERENCE_HOST: referencia
+      REFERENCE_PORT: "5000"
+      CLOCK_DRIFT_MS: "2500"
+    volumes:
+      - ts-server1_data:/data
+
+  ts-server2:
+    build:
+      context: ./ts
+      dockerfile: Dockerfile.server
+    restart: unless-stopped
+    depends_on:
+      - proxy
+      - referencia
+    environment:
+      SERVER_ID: ts-server2
+      SERVER_PORT: "8500"
+      SYNC_PORT: "8502"
+      PROXY_HOST: proxy
+      DATA_DIR: /data
+      REFERENCE_HOST: referencia
+      REFERENCE_PORT: "5000"
+    volumes:
+      - ts-server2_data:/data
+
+  ts-client1:
+    build:
+      context: ./ts
+      dockerfile: Dockerfile.client
+    restart: unless-stopped
+    depends_on:
+      - proxy
+      - ts-server1
+    environment:
+      SERVER_HOST: ts-server1
+      SERVER_PORT: "8400"
+      PROXY_HOST: proxy
+      CLIENT_MODE: auto
+      CLIENT_USER: ts_bot1
+
+  ts-client2:
+    build:
+      context: ./ts
+      dockerfile: Dockerfile.client
+    restart: unless-stopped
+    depends_on:
+      - proxy
+      - ts-server2
+    environment:
+      SERVER_HOST: ts-server2
+      SERVER_PORT: "8500"
+      PROXY_HOST: proxy
+      CLIENT_MODE: auto
+      CLIENT_USER: ts_bot2
+
+volumes:
+  cs-server1_data:
+  cs-server2_data:
+  py-server1_data:
+  py-server2_data:
+  java-server1_data:
+  java-server2_data:
+  ts-server1_data:
+  ts-server2_data:
